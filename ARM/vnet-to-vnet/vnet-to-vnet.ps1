@@ -68,11 +68,11 @@ $vnet2Gateway = New-AzureRMVirtualNetworkGateway -Name $vnet2GatewayName -Resour
 
 
 # Create VNET1-to-VNET2 connection
-
+$sharedkey = KJASf7asd3FA
 $vnet12ConnectionName = "$prefix-vnet-1-to-2-con"
-$vnet12Connection = New-AzureRMVirtualNetworkGatewayConnection -Name $vnet12ConnectionName -ResourceGroupName $rgName -Location $location -ConnectionType Vnet2Vnet -VirtualNetworkGateway1 $vnet1Gateway -VirtualNetworkGateway2 $vnet2Gateway
+$vnet12Connection = New-AzureRMVirtualNetworkGatewayConnection -Name $vnet12ConnectionName -ResourceGroupName $rgName -Location $location -ConnectionType Vnet2Vnet -VirtualNetworkGateway1 $vnet1Gateway -VirtualNetworkGateway2 $vnet2Gateway -SharedKey $sharedkey
 
 # Create VNET2-to-VNET1 connection
 
 $vnet21ConnectionName = "$prefix-vnet-2-to-1-con"
-$vnet21Connection = New-AzureRMVirtualNetworkGatewayConnection -Name $vnet21ConnectionName -ResourceGroupName $rgName -Location $location -ConnectionType Vnet2Vnet -VirtualNetworkGateway1 $vnet2Gateway -VirtualNetworkGateway2 $vnet1Gateway
+$vnet21Connection = New-AzureRMVirtualNetworkGatewayConnection -Name $vnet21ConnectionName -ResourceGroupName $rgName -Location $location -ConnectionType Vnet2Vnet -VirtualNetworkGateway1 $vnet2Gateway -VirtualNetworkGateway2 $vnet1Gateway -SharedKey $sharedkey
