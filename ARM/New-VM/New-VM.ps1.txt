@@ -1,0 +1,6 @@
+$resgrp = "DemoRes"
+$depname = "Deployment1"
+$location = "west europe"
+$TemplateUri = "https://raw.githubusercontent.com/krnese/azuredeploy/master/Basic/azuredeploy.json"
+
+New-AzureRmResourceGroupDeployment -Name $depname -ResourceGroupName (New-AzureRmResourceGroup -Name $resgrp -Location $location).ResourceGroupName -TemplateUri $TemplateUri -vmname AzureDemo01 -storageblobname azurestorage0201 -username azureadmin -Verbose
