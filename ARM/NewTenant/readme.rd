@@ -8,7 +8,5 @@
 </a>
 
 # Deploy using PowerShell:
-
-
 New-AzureRmResourceGroupDeployment -Name Deploy01 -ResourceGroupName (New-AzureRmResourceGroup -Name NewTenant -Location "west europe").ResourceGroupName -TemplateUri "https://raw.githubusercontent.com/Elsic/Div/master/ARM/NewTenant/NewTenant.json" -tenantvnetName "tenantvnet" -tenantname "tenant" -VMName "dc01" -VMAdminUserName "localadmin"
 
