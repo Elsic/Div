@@ -1,63 +1,74 @@
 ﻿{
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
-    "parameters": {
-      "tenantstorType": {
-        "type": "string",
-        "defaultValue": "Standard_LRS",
-        "allowedValues": [
-          "Standard_LRS",
-          "Standard_ZRS",
-          "Standard_GRS",
-          "Standard_RAGRS",
-          "Premium_LRS"
-        ]
-      },
-      "tenantvnetName": {
-        "type": "string"
-      },
-      "tenantname": {
-        "type": "string"
-      },
-        "VMName": {
-            "type": "string",
-            "minLength": 1
-        },
-        "VMAdminUserName": {
-            "type": "string",
-          "minLength": 1,
-          "defaultValue": "localadmin"
-        },
-        "VMAdminPassword": {
-            "type": "securestring"
-        },
-        "VMWindowsOSVersion": {
-            "type": "string",
-            "defaultValue": "2012-R2-Datacenter",
-            "allowedValues": [
-                "2008-R2-SP1",
-                "2012-Datacenter",
-                "2012-R2-Datacenter",
-                "Windows-Server-Technical-Preview"
-            ]
-        },
-        "workspaceId": {
-            "type": "string",
-            "metadata": {
-                "description": "The Workspace ID is the Operations Management Suite Workspace ID found in the OMS Console under Settings and Connected Sources"
-            }
-        },
-        "workspaceKey": {
-            "type": "string",
-            "metadata": {
-                "description": "The Workspace Key is the Operations Management Suite Workspace Key found in the OMS Console under Settings and Connected Sources"
-            }
-        }
+  "parameters": {
+    "tenantstorType": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_ZRS",
+        "Standard_GRS",
+        "Standard_RAGRS",
+        "Premium_LRS"
+      ]
     },
+    "tenantvnetName": {
+      "type": "string"
+    },
+    "tenantname": {
+      "type": "string"
+    },
+    "VMName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "VMAdminUserName": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "localadmin"
+    },
+    "VMAdminPassword": {
+      "type": "securestring"
+    },
+    "VMWindowsOSVersion": {
+      "type": "string",
+      "defaultValue": "2012-R2-Datacenter",
+      "allowedValues": [
+        "2008-R2-SP1",
+        "2012-Datacenter",
+        "2012-R2-Datacenter",
+        "Windows-Server-Technical-Preview"
+      ]
+    },
+    "workspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "The Workspace ID is the Operations Management Suite Workspace ID found in the OMS Console under Settings and Connected Sources"
+      }
+    },
+    "workspaceKey": {
+      "type": "string",
+      "metadata": {
+        "description": "The Workspace Key is the Operations Management Suite Workspace Key found in the OMS Console under Settings and Connected Sources"
+      }
+    },
+    "tenantstor2Type": {
+      "type": "string",
+      "defaultValue": "Standard_GRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_ZRS",
+        "Standard_GRS",
+        "Standard_RAGRS",
+        "Premium_LRS"
+      ]
+    }
+  },
   "variables": {
     "TenantVnetPrefix": "172.16.0.0/16",
-    "TenantVnetSubnet1Name": "GatewaySubnet",
-    "TenantVnetSubnet1Prefix": "172.16.0.0/29",
+    "GatewaySubnetName": "GatewaySubnet",
+    "GatewaySubnetPrefix": "172.16.0.0/29",
     "TenantVnetSubnet2Name": "TenantSubnet",
     "TenantVnetSubnet2Prefix": "172.16.1.0/24",
     "tenantstorName": "[concat('tenantstor', uniqueString(resourceGroup().id))]",
@@ -69,7 +80,9 @@
     "VMSubnetRef": "[concat(variables('VMVnetID'), '/subnets/', variables('TenantVnetSubnet2Name'))]",
     "VMStorageAccountContainerName": "vhds",
     "VMNicName": "[concat(parameters('VMName'), 'NetworkInterface')]",
-    "dc01pipName": "dc01pip"
+    "dc01pipName": "dc01pip",
+    "tenantstor2Name": "[concat('tenantstor2', uniqueString(resourceGroup().id))]",
+    "NSGName": "[concat(parameters('tenantname'), '_NSG')]"
   },
     "resources": [
       {
@@ -77,9 +90,10 @@
         "type": "Microsoft.Network/virtualNetworks",
         "location": "[resourceGroup().location]",
         "apiVersion": "2015-06-15",
-        "dependsOn": [ ],
+        "dependsOn": [
+          "[concat('Microsoft.Network/networkSecurityGroups/', variables('NSGName'))]"
+        ],
         "tags": {
-          "displayName": "[parameters('tenantvnetName')]",
           "tenantName" : "[parameters('tenantname')]"
         },
         "properties": {
@@ -90,15 +104,18 @@
           },
           "subnets": [
             {
-              "name": "[variables('TenantVnetSubnet1Name')]",
+              "name": "[variables('GatewaySubnetName')]",
               "properties": {
-                "addressPrefix": "[variables('TenantVnetSubnet1Prefix')]"
+                "addressPrefix": "[variables('GatewaySubnetPrefix')]"
               }
             },
             {
               "name": "[variables('TenantVnetSubnet2Name')]",
               "properties": {
-                "addressPrefix": "[variables('TenantVnetSubnet2Prefix')]"
+                "addressPrefix": "[variables('TenantVnetSubnet2Prefix')]",
+                "networkSecurityGroup": {
+                  "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('NSGName'))]"
+                }
               }
             }
           ]
@@ -111,7 +128,6 @@
             "apiVersion": "2015-06-15",
             "dependsOn": [ ],
           "tags": {
-            "displayName": "tenantstor",
             "tenantName": "[parameters('tenantname')]"
           },
             "properties": {
@@ -128,7 +144,6 @@
                 "[concat('Microsoft.Network/publicIPAddresses/', variables('dc01pipName'))]"
             ],
           "tags": {
-            "displayName": "VMNic",
             "tenantName": "[parameters('tenantname')]"
           },
             "properties": {
@@ -158,7 +173,6 @@
                 "[concat('Microsoft.Network/networkInterfaces/', variables('VMNicName'))]"
             ],
           "tags": {
-            "displayName": "VM",
             "tenantName": "[parameters('tenantname')]"
           },
             "properties": {
@@ -204,7 +218,6 @@
                         "[concat('Microsoft.Compute/virtualMachines/', parameters('VMName'))]"
                     ],
                   "tags": {
-                    "displayName": "MOMAgent",
                     "tenantName": "[parameters('tenantname')]"
                   },
                     "properties": {
@@ -229,13 +242,53 @@
             "apiVersion": "2015-06-15",
             "dependsOn": [ ],
           "tags": {
-            "displayName": "VMpip",
             "tenantName": "[parameters('tenantname')]"
           },
             "properties": {
                 "publicIPAllocationMethod": "Dynamic"
             }
+        },
+      {
+        "name": "[variables('tenantstor2Name')]",
+        "type": "Microsoft.Storage/storageAccounts",
+        "location": "[resourceGroup().location]",
+        "apiVersion": "2015-06-15",
+        "dependsOn": [ ],
+        "tags": {
+          "tenantName": "[parameters('tenantname')]"
+        },
+        "properties": {
+          "accountType": "[parameters('tenantstor2Type')]"
         }
+      },
+      {
+        "apiVersion": "2015-06-15",
+        "type": "Microsoft.Network/networkSecurityGroups",
+        "name": "[variables('NSGName')]",
+        "location": "[resourceGroup().location]",
+        "tags": {
+          "tenantName": "[parameters('tenantname')]"
+        },
+        "properties": {
+          "securityRules": [
+            {
+              "name": "rdp-rule",
+              "properties": {
+                "description": "Allow RDP",
+                "protocol": "Tcp",
+                "sourcePortRange": "*",
+                "destinationPortRange": "3389",
+                "sourceAddressPrefix": "Internet",
+                "destinationAddressPrefix": "*",
+                "access": "Allow",
+                "priority": 100,
+                "direction": "Inbound"
+              }
+            }
+          ]
+        }
+
+      }
     ],
     "outputs": {
     }
