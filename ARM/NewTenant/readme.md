@@ -1,8 +1,8 @@
-# Azure Windows Server Containers with IIS
+# Create new Tenant in Azure
 
 ## Synopsis
 
-Used to create a new tenant in Public Azure
+Used to create a new tenant in Public Azure, with Virtual Networks, Subnets, VM, NSG and Storage
 
 ### Deploy to azure
 [![Deploy to Azure](http://azuredeploy.net/deploybutton.png)](https://portal.azure.com/#create/Microsoft.Template/uri/https://raw.githubusercontent.com/Elsic/Div/master/ARM/NewTenant/NewTenant.json) 
