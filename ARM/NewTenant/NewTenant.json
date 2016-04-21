@@ -71,7 +71,7 @@
     "GatewaySubnetPrefix": "172.16.0.0/29",
     "TenantVnetSubnet2Name": "TenantSubnet",
     "TenantVnetSubnet2Prefix": "172.16.1.0/24",
-    "tenantstorName": "[concat('tenantstor', uniqueString(resourceGroup().id))]",
+    "tenantstorName": "[concat(parameters('tenantname'), uniqueString(resourceGroup().id))]",
     "VMImagePublisher": "MicrosoftWindowsServer",
     "VMImageOffer": "WindowsServer",
     "VMOSDiskName": "VMOSDisk",
@@ -80,8 +80,8 @@
     "VMSubnetRef": "[concat(variables('VMVnetID'), '/subnets/', variables('TenantVnetSubnet2Name'))]",
     "VMStorageAccountContainerName": "vhds",
     "VMNicName": "[concat(parameters('VMName'), 'NetworkInterface')]",
-    "dc01pipName": "dc01pip",
-    "tenantstor2Name": "[concat('tenantstor2', uniqueString(resourceGroup().id))]",
+    "VMpipName": "[concat(parameters('VMname'),'_pip')]",
+    "tenantstor2Name": "[concat(parameters('tenantname'), uniqueString(resourceGroup().id))]",
     "NSGName": "[concat(parameters('tenantname'), '_NSG')]"
   },
     "resources": [
@@ -236,7 +236,7 @@
             ]
         },
         {
-            "name": "[variables('dc01pipName')]",
+            "name": "[variables('vmpipName')]",
             "type": "Microsoft.Network/publicIPAddresses",
             "location": "[resourceGroup().location]",
             "apiVersion": "2015-06-15",
