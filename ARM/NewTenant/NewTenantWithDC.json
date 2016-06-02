@@ -1,0 +1,271 @@
+﻿{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+  "parameters": {
+    "tenantstorType": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_ZRS",
+        "Standard_GRS",
+        "Standard_RAGRS",
+        "Premium_LRS"
+      ]
+    },
+    "tenantvnetName": {
+      "type": "string"
+    },
+    "tenantname": {
+      "type": "string"
+    },
+    "VMName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "VMAdminUserName": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "localadmin"
+    },
+    "VMAdminPassword": {
+      "type": "securestring"
+    },
+    "VMWindowsOSVersion": {
+      "type": "string",
+      "defaultValue": "2012-R2-Datacenter",
+      "allowedValues": [
+        "2008-R2-SP1",
+        "2012-Datacenter",
+        "2012-R2-Datacenter",
+        "Windows-Server-Technical-Preview"
+      ]
+    },
+    "tenantstor2Type": {
+      "type": "string",
+      "defaultValue": "Standard_GRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_ZRS",
+        "Standard_GRS",
+        "Standard_RAGRS",
+        "Premium_LRS"
+      ]
+    }
+  },
+  "variables": {
+    "TenantVnetPrefix": "10.2.0.0/16",
+    "GatewaySubnetName": "GatewaySubnet",
+    "GatewaySubnetPrefix": "10.2.2.0/29",
+    "TenantVnetSubnet2Name": "[concat(parameters('tenantname'), '_Subnet')]",
+    "TenantVnetSubnet2Prefix": "10.2.1.0/24",
+    "tenantstorName": "[concat(parameters('tenantname'), uniqueString(resourceGroup().id))]",
+    "VMImagePublisher": "MicrosoftWindowsServer",
+    "VMImageOffer": "WindowsServer",
+    "VMOSDiskName": "VMOSDisk",
+    "VMVmSize": "Standard_D1",
+    "VMVnetID": "[resourceId('Microsoft.Network/virtualNetworks', parameters('tenantvnetName'))]",
+    "VMSubnetRef": "[concat(variables('VMVnetID'), '/subnets/', variables('TenantVnetSubnet2Name'))]",
+    "VMStorageAccountContainerName": "vhds",
+    "VMNicName": "[concat(parameters('VMName'), 'NetworkInterface')]",
+    "VMpipName": "[concat(parameters('VMname'),'_pip')]",
+    "tenantstor2Name": "[concat(parameters('tenantname'), uniqueString(resourceGroup().id))]",
+    "NSGName": "[concat(parameters('tenantname'), '_NSG')]"
+  },
+    "resources": [
+      {
+        "name": "[parameters('tenantvnetName')]",
+        "type": "Microsoft.Network/virtualNetworks",
+        "location": "[resourceGroup().location]",
+        "apiVersion": "2015-06-15",
+        "dependsOn": [
+          "[concat('Microsoft.Network/networkSecurityGroups/', variables('NSGName'))]"
+        ],
+        "tags": {
+          "tenantName" : "[parameters('tenantname')]"
+        },
+        "properties": {
+          "addressSpace": {
+            "addressPrefixes": [
+              "[variables('TenantVnetPrefix')]"
+            ]
+          },
+          "subnets": [
+            {
+              "name": "[variables('GatewaySubnetName')]",
+              "properties": {
+                "addressPrefix": "[variables('GatewaySubnetPrefix')]"
+              }
+            },
+            {
+              "name": "[variables('TenantVnetSubnet2Name')]",
+              "properties": {
+                "addressPrefix": "[variables('TenantVnetSubnet2Prefix')]",
+                "networkSecurityGroup": {
+                  "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('NSGName'))]"
+                }
+              }
+            }
+          ]
+        }
+      },
+        {
+            "name": "[variables('tenantstorName')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-15",
+            "dependsOn": [ ],
+          "tags": {
+            "tenantName": "[parameters('tenantname')]"
+          },
+            "properties": {
+                "accountType": "[parameters('tenantstorType')]"
+            }
+        },
+        {
+            "name": "[variables('VMNicName')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-15",
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/', parameters('tenantvnetName'))]",
+                "[concat('Microsoft.Network/publicIPAddresses/', variables('vmpipName'))]"
+            ],
+          "tags": {
+            "tenantName": "[parameters('tenantname')]"
+          },
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[variables('VMSubnetRef')]"
+                            },
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('vmpipName'))]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[parameters('VMName')]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-15",
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/', variables('tenantstorName'))]",
+                "[concat('Microsoft.Network/networkInterfaces/', variables('VMNicName'))]"
+            ],
+          "tags": {
+            "tenantName": "[parameters('tenantname')]"
+          },
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[variables('VMVmSize')]"
+                },
+                "osProfile": {
+                    "computerName": "[parameters('VMName')]",
+                    "adminUsername": "[parameters('VMAdminUsername')]",
+                    "adminPassword": "[parameters('VMAdminPassword')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "[variables('VMImagePublisher')]",
+                        "offer": "[variables('VMImageOffer')]",
+                        "sku": "[parameters('VMWindowsOSVersion')]",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "name": "VMOSDisk",
+                        "vhd": {
+                            "uri": "[concat('http://', variables('tenantstorName'), '.blob.core.windows.net/', variables('VMStorageAccountContainerName'), '/', variables('VMOSDiskName'), '.vhd')]"
+                        },
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('VMNicName'))]"
+                        }
+                    ]
+                }
+            },
+            "resources": [
+                {
+                    "name": "Microsoft.EnterpriseCloud.Monitoring",
+                    "type": "extensions",
+                    "location": "[resourceGroup().location]",
+                    "apiVersion": "2015-06-15",
+                    "dependsOn": [
+                        "[concat('Microsoft.Compute/virtualMachines/', parameters('VMName'))]"
+                    ],
+                  "tags": {
+                    "tenantName": "[parameters('tenantname')]"
+                  }
+                }
+            ]
+        },
+        {
+            "name": "[variables('vmpipName')]",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-15",
+            "dependsOn": [ ],
+          "tags": {
+            "tenantName": "[parameters('tenantname')]"
+          },
+            "properties": {
+                "publicIPAllocationMethod": "Dynamic"
+            }
+        },
+      {
+        "name": "[variables('tenantstor2Name')]",
+        "type": "Microsoft.Storage/storageAccounts",
+        "location": "[resourceGroup().location]",
+        "apiVersion": "2015-06-15",
+        "dependsOn": [ ],
+        "tags": {
+          "tenantName": "[parameters('tenantname')]"
+        },
+        "properties": {
+          "accountType": "[parameters('tenantstor2Type')]"
+        }
+      },
+      {
+        "apiVersion": "2015-06-15",
+        "type": "Microsoft.Network/networkSecurityGroups",
+        "name": "[variables('NSGName')]",
+        "location": "[resourceGroup().location]",
+        "tags": {
+          "tenantName": "[parameters('tenantname')]"
+        },
+        "properties": {
+          "securityRules": [
+            {
+              "name": "rdp-rule",
+              "properties": {
+                "description": "Allow RDP",
+                "protocol": "Tcp",
+                "sourcePortRange": "*",
+                "destinationPortRange": "3389",
+                "sourceAddressPrefix": "Internet",
+                "destinationAddressPrefix": "*",
+                "access": "Allow",
+                "priority": 100,
+                "direction": "Inbound"
+              }
+            }
+          ]
+        }
+
+      }
+    ],
+    "outputs": {
+    }
+}
