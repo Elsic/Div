@@ -69,7 +69,7 @@
     "VMStorageAccountContainerName": "vhds",
     "VMNicName": "[concat(parameters('VMName'), 'NetworkInterface')]",
     "VMpipName": "[concat(parameters('VMname'),'_pip')]",
-    "tenantstor2Name": "[concat(parameters('tenantname'), uniqueString(resourceGroup().id))]",
+    "tenantstor2Name": "[concat(parameters('tenantname'),'2', uniqueString(resourceGroup().id))]",
     "NSGName": "[concat(parameters('tenantname'), '_NSG')]"
   },
     "resources": [
