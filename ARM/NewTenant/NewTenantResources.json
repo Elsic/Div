@@ -38,7 +38,7 @@
     "TenantVnetSubnet2Name": "[concat(parameters('tenantname'), '_Subnet')]",
     "TenantVnetSubnet2Prefix": "10.2.1.0/24",
     "tenantstorName": "[concat(parameters('tenantname'), uniqueString(resourceGroup().id))]",
-    "tenantstor2Name": "[concat(parameters('tenantname'), uniqueString(resourceGroup().id))]",
+    "tenantstor2Name": "[concat(parameters('tenantname'),'2', uniqueString(resourceGroup().id))]",
     "NSGName": "[concat(parameters('tenantname'), '_NSG')]"
   },
     "resources": [
